@@ -11,7 +11,6 @@ import android.os.Handler;
 import android.os.Message;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.util.LruCache;
 import android.view.Display;
 import android.view.View;
@@ -47,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     private static final int MAX_LRUCACHE = 500;
     private int mKeyIndex = 0;
     private int mPlayIndex = 0;
-    private boolean isPlaying = false;
+    private boolean isPlaying = false;//动画是否在播放的标志
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -192,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 静态内部类
+     * Handler静态内部类
      */
     private static class MyHandler extends Handler {
         //持有activity的弱引用，防止无法及时释放
@@ -220,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
         mAnimatorList.put(mKeyIndex, message);
         if (!isPlaying) {
             isPlaying = true;
+            tv_toast.setVisibility(View.VISIBLE);
             mAnimatorSet.start();
         }
     }
@@ -243,7 +243,6 @@ public class MainActivity extends AppCompatActivity {
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
                 mPlayIndex += 1;
-                tv_toast.setVisibility(View.VISIBLE);
                 changeTvToShow(mAnimatorList.get(mPlayIndex));
             }
 
@@ -275,19 +274,16 @@ public class MainActivity extends AppCompatActivity {
         //根据用户级别设置动画背景
         if (animatorBean.isShowBg()) {
             int level = animatorBean.getUserLevel();
-            tv_toast.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.colorTextNormal));
-            tv_toast.setPadding(DensityUtil.dip2px(getApplicationContext(), 35), DensityUtil.dip2px(getApplicationContext(), 10)
-                    , DensityUtil.dip2px(getApplicationContext(), 10), DensityUtil.dip2px(getApplicationContext(), 10));
             if (level == 1) {
-                tv_toast.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.level_badge_1));
+                setToastBg(R.drawable.level_badge_1);
             } else if (level >= 2 && level <= 15) {
-                tv_toast.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.level_badge_2));
+                setToastBg(R.drawable.level_badge_2);
             } else if (level >= 16 && level <= 25) {
-                tv_toast.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.level_badge_16));
+                setToastBg(R.drawable.level_badge_16);
             } else if (level >= 26 && level <= 40) {
-                tv_toast.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.level_badge_26));
+                setToastBg(R.drawable.level_badge_26);
             } else if (level >= 41) {
-                tv_toast.setBackground(ContextCompat.getDrawable(MainActivity.this, R.drawable.level_badge_41));
+                setToastBg(R.drawable.level_badge_41);
             }
         } else {
             changeTvToNormal();
@@ -296,7 +292,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 多人弹窗时的设置a
+     * 动态设置背景
+     */
+    public void setToastBg(int res) {
+        tv_toast.setPadding(DensityUtil.dip2px(getApplicationContext(), 35), DensityUtil.dip2px(getApplicationContext(), 10)
+                , DensityUtil.dip2px(getApplicationContext(), 10), DensityUtil.dip2px(getApplicationContext(), 10));
+        tv_toast.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.colorTextNormal));
+        tv_toast.setBackground(ContextCompat.getDrawable(MainActivity.this, res));
+    }
+
+    /**
+     * 多人弹窗时的设置
      */
     private void changeTvToNormal() {
         tv_toast.setPadding(0, 0, 0, 0);
