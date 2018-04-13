@@ -424,7 +424,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     continue;
                 }
-                mMessage.append(mBean.getUser().getName() + ",");
+                mMessage.append(mBean.getUser().getName()).append(",");
             }
             if (reallySize > SHOW_NUMBER) {
                 //此时应该清除掉剩下的数据（在刚刚取操作的时候新添入的数据不可被移除）
@@ -437,7 +437,7 @@ public class MainActivity extends AppCompatActivity {
             mBean = queue.poll();
             index += 1;
             userLevel = mBean.getUser().getLevel();
-            mMessage.append(mBean.getUser().getName() + getResources().getString(R.string.gift) + mBean.getGift().getName());
+            mMessage.append(mBean.getUser().getName()).append(getResources().getString(R.string.gift)).append(mBean.getGift().getName());
         }
 
         if (index != 1) {
