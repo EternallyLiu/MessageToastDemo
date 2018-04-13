@@ -135,25 +135,22 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     switch (message.getOpType()) {
                         case 1:
-                            if (mRoomQueue.size() >= MAX_VALUE) {
-                                return;
+                            if (mRoomQueue.size() < MAX_VALUE) {
+                                mRoomQueue.put(message);
                             }
-                            mRoomQueue.put(message);
                             break;
                         case 2:
-                            if (mLikeQueue.size() >= MAX_VALUE) {
-                                return;
+                            if (mLikeQueue.size() < MAX_VALUE) {
+                                mLikeQueue.put(message);
                             }
-                            mLikeQueue.put(message);
                             break;
                         case 3:
                             mGiftQueue.put(message);
                             break;
                         case 4:
-                            if (mShareQueue.size() >= MAX_VALUE) {
-                                return;
+                            if (mShareQueue.size() < MAX_VALUE) {
+                                mShareQueue.put(message);
                             }
-                            mShareQueue.put(message);
                             break;
                     }
                 } catch (InterruptedException e) {
