@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
     private static final int COME_TIME = 800;
     private static final int SHOW_TIME = 500;
-    private static final int OUT_TIME = 500;
+    private static final int OUT_TIME = 200;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
