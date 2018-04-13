@@ -48,6 +48,10 @@ public class MainActivity extends AppCompatActivity {
     private int mPlayIndex = 0;
     private boolean isPlaying = false;//动画是否在播放的标志
 
+    private static final int COME_TIME = 800;
+    private static final int SHOW_TIME = 500;
+    private static final int OUT_TIME = 500;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -114,7 +118,6 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 发送消息
-     *
      * @param opType
      */
     private void sendMessage(final int opType) {
@@ -173,20 +176,18 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 初始化存储数据结构
+     * 对于进入房间点赞分享等操作大量数据时，大量创建Node对象并插入和删除，并且虽然可能会存在有并发操作但是因为只存在一次取操作所以阻塞时间很短。
+     * 所以可以直接使用数组队列，而不必考虑锁分离，故综合来讲选择ArrayBlockingQueue。
+     *
+     * 送礼物的话数据量没有那么庞大（数据量庞大会造成系统不断GC，影响性能），但是每条都需要去读取回调UI，所以耗时长.
+     * 同时在此期间可能会有写入的并发操作，故使用带有锁分离的LinkedBlockingQueue降低锁的粒度,
+     * 从而不需要去锁住整个队列来提高性能，以确保高并发时减少阻塞，同时虽付出一些空间成本但数据量不是特别大仍是最优。
      */
     private void initStructure() {
-        /**
-         * 对于进入房间点赞分享等操作大量数据时，大量创建Node对象并插入和删除，并且虽然可能会存在有并发操作但是因为只存在一次取操作所以阻塞时间很短。
-         * 所以可以直接使用数组队列，而不必考虑锁分离，故综合来讲选择ArrayBlockingQueue。
-         */
         mRoomQueue = new ArrayBlockingQueue<>(MAX_VALUE);//设置为6个是如果当前已经存在三个消息对象在排队，因为只最多展示三个，故之后的消息舍弃掉且不再进入队列。
         mLikeQueue = new ArrayBlockingQueue<>(MAX_VALUE);
         mShareQueue = new ArrayBlockingQueue<>(MAX_VALUE);
-        /**
-         * 送礼物的话数据量没有那么庞大（数据量庞大会造成系统不断GC，影响性能），但是每条都需要去读取回调UI，所以耗时长.
-         * 同时在此期间可能会有写入的并发操作，故使用带有锁分离的LinkedBlockingQueue降低锁的粒度,
-         * 从而不需要去锁住整个队列来提高性能，以确保高并发时减少阻塞，同时虽付出一些空间成本但数据量不是特别大仍是最优。
-         */
+
         mGiftQueue = new LinkedBlockingQueue<>();
     }
 
@@ -212,16 +213,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 开启动画
+     * 获取屏幕宽高，便于执行动画
      */
-    public void startAnimation(AnimatorBean message) {
-        mKeyIndex += 1;
-        mAnimatorList.put(mKeyIndex, message);
-        if (!isPlaying) {
-            isPlaying = true;
-            tv_toast.setVisibility(View.VISIBLE);
-            mAnimatorSet.start();
-        }
+    private void initDisPlay() {
+        Display defaultDisplay = getWindowManager().getDefaultDisplay();
+        final Point realSize = new Point();
+        defaultDisplay.getRealSize(realSize);
+        mScreenHeight = realSize.x;
+        mScreenWidth = realSize.y;
     }
 
     /**
@@ -231,11 +230,11 @@ public class MainActivity extends AppCompatActivity {
         mAnimatorList = new LruCache<>(MAX_LRUCACHE);
         initDisPlay();
         ObjectAnimator moveAnimator = ObjectAnimator.ofFloat(tv_toast, "TranslationX", mScreenWidth, tv_toast.getX());
-        moveAnimator.setDuration(800);
+        moveAnimator.setDuration(COME_TIME);
         ObjectAnimator showAnimator = ObjectAnimator.ofFloat(tv_toast, "alpha", 1.0f, 1.0f);
-        showAnimator.setDuration(500);
+        showAnimator.setDuration(SHOW_TIME);
         ObjectAnimator hideAnimator = ObjectAnimator.ofFloat(tv_toast, "TranslationX", -mScreenWidth);
-        hideAnimator.setDuration(200);
+        hideAnimator.setDuration(OUT_TIME);
         mAnimatorSet = new AnimatorSet();
         mAnimatorSet.playSequentially(moveAnimator, showAnimator, hideAnimator);
         mAnimatorSet.addListener(new AnimatorListenerAdapter() {
@@ -311,14 +310,16 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 获取屏幕宽高，便于执行动画
+     * 开启动画
      */
-    private void initDisPlay() {
-        Display defaultDisplay = getWindowManager().getDefaultDisplay();
-        final Point realSize = new Point();
-        defaultDisplay.getRealSize(realSize);
-        mScreenHeight = realSize.x;
-        mScreenWidth = realSize.y;
+    public void startAnimation(AnimatorBean message) {
+        mKeyIndex += 1;
+        mAnimatorList.put(mKeyIndex, message);
+        if (!isPlaying) {
+            isPlaying = true;
+            tv_toast.setVisibility(View.VISIBLE);
+            mAnimatorSet.start();
+        }
     }
 
     /**
