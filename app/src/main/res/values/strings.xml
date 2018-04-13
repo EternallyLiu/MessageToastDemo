@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">MessageToastDemo</string>
+    <string name="come">进入了房间</string>
+    <string name="comes">等进入了房间</string>
+    <string name="like">赞了主播</string>
+    <string name="likes">等赞了主播</string>
+    <string name="share">分享了主播</string>
+    <string name="shares">等分享了主播</string>
+    <string name="gift">送出了</string>
+</resources>
