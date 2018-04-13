@@ -210,17 +210,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * 获取屏幕宽高，便于执行动画
-     */
-    private void initDisPlay() {
-        Display defaultDisplay = getWindowManager().getDefaultDisplay();
-        final Point realSize = new Point();
-        defaultDisplay.getRealSize(realSize);
-        mScreenHeight = realSize.x;
-        mScreenWidth = realSize.y;
-    }
-
-    /**
      * 初始化动画集合
      */
     public void initAnimation() {
@@ -256,6 +245,30 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+
+    /**
+     * 开启动画
+     */
+    public void startAnimation(AnimatorBean message) {
+        mKeyIndex += 1;
+        mAnimatorList.put(mKeyIndex, message);
+        if (!isPlaying) {
+            isPlaying = true;
+            tv_toast.setVisibility(View.VISIBLE);
+            mAnimatorSet.start();
+        }
+    }
+
+    /**
+     * 获取屏幕宽高，便于执行动画
+     */
+    private void initDisPlay() {
+        Display defaultDisplay = getWindowManager().getDefaultDisplay();
+        final Point realSize = new Point();
+        defaultDisplay.getRealSize(realSize);
+        mScreenHeight = realSize.x;
+        mScreenWidth = realSize.y;
     }
 
     /**
@@ -304,19 +317,6 @@ public class MainActivity extends AppCompatActivity {
         tv_toast.setPadding(0, 0, 0, 0);
         tv_toast.setBackgroundColor(ContextCompat.getColor(MainActivity.this, R.color.colorTextNormal));
         tv_toast.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.colorTextBg));
-    }
-
-    /**
-     * 开启动画
-     */
-    public void startAnimation(AnimatorBean message) {
-        mKeyIndex += 1;
-        mAnimatorList.put(mKeyIndex, message);
-        if (!isPlaying) {
-            isPlaying = true;
-            tv_toast.setVisibility(View.VISIBLE);
-            mAnimatorSet.start();
-        }
     }
 
     /**
