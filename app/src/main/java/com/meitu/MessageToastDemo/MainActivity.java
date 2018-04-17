@@ -281,22 +281,21 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         //根据用户级别设置动画背景
-        if (!animatorBean.isShowBg()) {
+        if (animatorBean.isShowBg()) {
+            int level = animatorBean.getUserLevel();
+            if (level == 1) {
+                setToastBg(R.drawable.level_badge_1);
+            } else if (level >= 2 && level <= 15) {
+                setToastBg(R.drawable.level_badge_2);
+            } else if (level >= 16 && level <= 25) {
+                setToastBg(R.drawable.level_badge_16);
+            } else if (level >= 26 && level <= 40) {
+                setToastBg(R.drawable.level_badge_26);
+            } else if (level >= 41) {
+                setToastBg(R.drawable.level_badge_41);
+            }
+        } else {
             changeTvToNormal();
-            return;
-        }
-
-        int level = animatorBean.getUserLevel();
-        if (level == 1) {
-            setToastBg(R.drawable.level_badge_1);
-        } else if (level >= 2 && level <= 15) {
-            setToastBg(R.drawable.level_badge_2);
-        } else if (level >= 16 && level <= 25) {
-            setToastBg(R.drawable.level_badge_16);
-        } else if (level >= 26 && level <= 40) {
-            setToastBg(R.drawable.level_badge_26);
-        } else if (level >= 41) {
-            setToastBg(R.drawable.level_badge_41);
         }
         tv_toast.setText(animatorBean.getMessage());
     }
