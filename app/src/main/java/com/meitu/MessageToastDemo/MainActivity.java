@@ -213,16 +213,13 @@ public class MainActivity extends AppCompatActivity {
      * 初始化动画集合
      */
     public void initAnimation() {
-        mAnimatorList = new LruCache<>(MAX_LRUCACHE);
         initDisPlay();
-        ObjectAnimator moveAnimator = ObjectAnimator.ofFloat(tv_toast, "TranslationX", mScreenWidth, tv_toast.getX());
-        moveAnimator.setDuration(COME_TIME);
-        ObjectAnimator showAnimator = ObjectAnimator.ofFloat(tv_toast, "alpha", 1.0f, 1.0f);
-        showAnimator.setDuration(SHOW_TIME);
-        ObjectAnimator hideAnimator = ObjectAnimator.ofFloat(tv_toast, "TranslationX", -mScreenWidth);
-        hideAnimator.setDuration(OUT_TIME);
+        mAnimatorList = new LruCache<>(MAX_LRUCACHE);
         mAnimatorSet = new AnimatorSet();
-        mAnimatorSet.playSequentially(moveAnimator, showAnimator, hideAnimator);
+        //按次序播放动画
+        mAnimatorSet.playSequentially(createAnimation("TranslationX",COME_TIME,mScreenWidth, tv_toast.getX()),
+                                      createAnimation("alpha", SHOW_TIME, 1.0f, 1.0f),
+                                      createAnimation("TranslationX", OUT_TIME, -mScreenWidth));
         mAnimatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
@@ -234,17 +231,23 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                if (!(mPlayIndex + 1 > mKeyIndex)) {
-                    mAnimatorSet.start();
-                    return;
-                }
-
-                synchronized (mLooperThread) {
-                    mLooperThread.notifyAll();
+                if (mPlayIndex + 1 > mKeyIndex) {
                     isPlaying = false;
+                    synchronized (mLooperThread) {
+                        mLooperThread.notifyAll();
+                        return;
+                    }
                 }
+                mAnimatorSet.start();
             }
         });
+    }
+
+    /**
+     * 创建动画
+     */
+    public ObjectAnimator createAnimation(String propertyName,long time,float... values) {
+        return ObjectAnimator.ofFloat(tv_toast, propertyName, values).setDuration(time);
     }
 
     /**
@@ -377,7 +380,7 @@ public class MainActivity extends AppCompatActivity {
         mMessage.setLength(0);
         //记录本次播放次数
         int index = 0;
-        //如果只有一个人用来记录级别
+        //单人进入房间时记录级别
         int userLevel = 1;
 
         if (queue instanceof ArrayBlockingQueue) {
@@ -440,9 +443,8 @@ public class MainActivity extends AppCompatActivity {
 
         if (index != 1) {
             return new AnimatorBean(mMessage.toString(), userLevel, false);
-        } else {
-            return new AnimatorBean(mMessage.toString(), userLevel, true);
         }
+        return new AnimatorBean(mMessage.toString(), userLevel, true);
     }
 
     @Override
