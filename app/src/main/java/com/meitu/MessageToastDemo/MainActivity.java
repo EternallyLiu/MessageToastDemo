@@ -305,19 +305,16 @@ public class MainActivity extends AppCompatActivity {
             super.run();
             //判断Activity是否已经被销毁
             while (!isStopLooper) {
-                synchronized (mLooperThread) {
-                    try {
+
                         //官网推荐使用isEmpty替换size方法，size方法需要遍历整个链表
                         if (!mRoomQueue.isEmpty()) {
                             synchronized (mRoomLock) {
                                 sendMessageToHandler(getTypeStr(mRoomQueue));//处理进入房间
-                                mLooperThread.wait();
                             }
                         }
                         if (!mLikeQueue.isEmpty()) {
                             synchronized (mLikeLock) {
                                 sendMessageToHandler(getTypeStr(mLikeQueue));//处理点赞
-                                mLooperThread.wait();
                             }
                         }
                         //处理送礼物,只取截止到获取礼物池中的数量时的队列长度
@@ -333,13 +330,8 @@ public class MainActivity extends AppCompatActivity {
                         if (!mShareQueue.isEmpty()) {
                             synchronized (mShareLock) {
                                 sendMessageToHandler(getTypeStr(mShareQueue));//处理分享
-                                mLooperThread.wait();
                             }
                         }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
             }
         }
     }
@@ -352,6 +344,13 @@ public class MainActivity extends AppCompatActivity {
             Message toastMessage = Message.obtain();
             toastMessage.obj = obj;
             mHandler.sendMessage(toastMessage);
+            synchronized (mLooperThread) {
+                try {
+                    mLooperThread.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
         }
     }
 
