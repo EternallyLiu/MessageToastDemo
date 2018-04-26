@@ -13,13 +13,13 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/op1"
+            android:id="@+id/edit_room"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:text="0"/>
 
         <Button
-            android:id="@+id/btn1"
+            android:id="@+id/btn_room"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="进入"/>
@@ -32,13 +32,13 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/op2"
+            android:id="@+id/edit_like"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:text="0"/>
 
         <Button
-            android:id="@+id/btn2"
+            android:id="@+id/btn_like"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="点赞"/>
@@ -51,13 +51,13 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/op3"
+            android:id="@+id/edit_gift"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:text="0"/>
 
         <Button
-            android:id="@+id/btn3"
+            android:id="@+id/btn_gift"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="送礼"/>
@@ -70,19 +70,19 @@
         android:orientation="horizontal">
 
         <EditText
-            android:id="@+id/op4"
+            android:id="@+id/edit_share"
             android:layout_width="80dp"
             android:layout_height="wrap_content"
             android:text="0"/>
 
         <Button
-            android:id="@+id/btn4"
+            android:id="@+id/btn_share"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="分享"/>
     </LinearLayout>
 
-    <Button android:id="@+id/btnR"
+    <Button android:id="@+id/btn_radom"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="10dp"

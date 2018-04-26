@@ -9,7 +9,6 @@ import android.graphics.Point;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.util.LruCache;
 import android.view.Display;
@@ -19,101 +18,102 @@ import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
 import java.util.Random;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
 
 public class MainActivity extends AppCompatActivity {
-    private TextView tv_toast;
-    private BlockingQueue<MessageBean> mRoomQueue;
-    private BlockingQueue<MessageBean> mLikeQueue;
-    private BlockingQueue<MessageBean> mGiftQueue;
-    private BlockingQueue<MessageBean> mShareQueue;
+    @BindView(R.id.edit_room)
+    EditText mEditRoom;
+    @BindView(R.id.edit_like)
+    EditText mEditLike;
+    @BindView(R.id.edit_gift)
+    EditText mEditGift;
+    @BindView(R.id.edit_share)
+    EditText mEditShare;
+    @BindView(R.id.tv_toast)
+    TextView tv_toast;
 
-    private static final int MAX_VALUE = 6;
-    private static final int SHOW_NUMBER = 3;
+    private ConcurrentLinkedQueue<MessageBean> mRoomQueue;
+    private ConcurrentLinkedQueue<MessageBean> mLikeQueue;
+    private ConcurrentLinkedQueue<MessageBean> mGiftQueue;
+    private ConcurrentLinkedQueue<MessageBean> mShareQueue;
 
-    private StringBuffer mMessage;//文案内容
     private MainActivity.MyHandler mHandler = new MainActivity.MyHandler(this);
     private MessageBean mBean;//消息提示实体对象
+    private AnimatorSet mAnimatorSet;
+    private LooperThread mLooperThread;
+
     private int mScreenHeight;
     private int mScreenWidth;
-    private AnimatorSet mAnimatorSet;
-
-    private EditText op1, op2, op3, op4;
-    private LooperThread mLooperThread;
-    private LruCache<Integer, AnimatorBean> mAnimatorList;
-    private static final int MAX_LRUCACHE = 500;
+    private StringBuffer mMessage;//文案内容
     private int mKeyIndex = 0;
     private int mPlayIndex = 0;
-    private boolean isPlaying = false;//动画是否在播放的标志
+    private volatile boolean isPlaying = false;//动画是否在播放的标志
+    private volatile boolean isStopLooper = false;//是否退出消息轮询线程
+    private LruCache<Integer, AnimatorBean> mAnimatorList;
 
     private static final int COME_TIME = 800;
     private static final int SHOW_TIME = 500;
     private static final int OUT_TIME = 200;
+    private static final int MAX_LRUCACHE = 500;
+    private static final int SHOW_NUMBER = 3;
+    private static final int MAX_VALUE = 6;
+
+    private Object mRoomLock = new Object();
+    private Object mLikeLock = new Object();
+    private Object mGiftLock = new Object();
+    private Object mShareLock = new Object();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        initView();//初始化发送按钮
+        ButterKnife.bind(this);
+        initStructure();//初始化存储数据结构
         initAnimation();//初始化动画集合
         mLooperThread = new LooperThread();
         mLooperThread.start();
     }
 
     /**
-     * 初始化View
+     * 初始化点击事件
+     * @param view
      */
-    private void initView() {
-        initStructure();//初始化存储数据结构
-        tv_toast = findViewById(R.id.tv_toast);
-        op1 = findViewById(R.id.op1);
-        op2 = findViewById(R.id.op2);
-        op3 = findViewById(R.id.op3);
-        op4 = findViewById(R.id.op4);
-        findViewById(R.id.btn1).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int count = Integer.parseInt(op1.getText().toString());
+    @OnClick({R.id.btn_room, R.id.btn_like, R.id.btn_gift, R.id.btn_share, R.id.btn_radom})
+    public void onclickBtn(View view) {
+        int count;
+        switch (view.getId()) {
+            case R.id.btn_room:
+                count = Integer.parseInt(mEditRoom.getText().toString());
                 for (int i = 0; i < count; i++) {
                     sendMessage(1);
                 }
-            }
-        });
-        findViewById(R.id.btn2).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int count = Integer.parseInt(op2.getText().toString());
+                break;
+            case R.id.btn_like:
+                count = Integer.parseInt(mEditLike.getText().toString());
                 for (int i = 0; i < count; i++) {
                     sendMessage(2);
                 }
-            }
-        });
-        findViewById(R.id.btn3).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int count = Integer.parseInt(op3.getText().toString());
+                break;
+            case R.id.btn_gift:
+                count = Integer.parseInt(mEditGift.getText().toString());
                 for (int i = 0; i < count; i++) {
                     sendMessage(3);
                 }
-            }
-        });
-        findViewById(R.id.btn4).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                int count = Integer.parseInt(op4.getText().toString());
+                break;
+            case R.id.btn_share:
+                count = Integer.parseInt(mEditShare.getText().toString());
                 for (int i = 0; i < count; i++) {
                     sendMessage(4);
                 }
-            }
-        });
-        findViewById(R.id.btnR).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+                break;
+            case R.id.btn_radom:
                 sendMessage(new Random().nextInt(4) + 1);
-            }
-        });
+                break;
+        }
     }
 
     /**
@@ -121,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
      * @param opType
      */
     private void sendMessage(final int opType) {
-        new Thread(new Runnable() {
+        Thread message = new Thread(new Runnable() {
             @Override
             public void run() {
                 MessageBean.User userBean = getUser();
@@ -132,32 +132,39 @@ public class MainActivity extends AppCompatActivity {
                         break;
                 }
                 MessageBean message = new MessageBean(opType, userBean, giftBean);
-                try {
-                    switch (message.getOpType()) {
-                        case 1:
+                switch (message.getOpType()) {
+                    case 1:
+                        synchronized (mRoomLock) {
+                            //因为使用了无界的非阻塞队列，所以需要判断下内部存储的数据量大小
                             if (mRoomQueue.size() < MAX_VALUE) {
-                                mRoomQueue.put(message);
+                                mRoomQueue.offer(message);
                             }
-                            break;
-                        case 2:
+                        }
+                        break;
+                    case 2:
+                        synchronized (mLikeLock) {
                             if (mLikeQueue.size() < MAX_VALUE) {
-                                mLikeQueue.put(message);
+                                mLikeQueue.offer(message);
                             }
-                            break;
-                        case 3:
-                            mGiftQueue.put(message);
-                            break;
-                        case 4:
+                        }
+                        break;
+                    case 3:
+                        //送礼物队列不限制大小
+                        synchronized (mGiftLock) {
+                            mGiftQueue.offer(message);
+                        }
+                        break;
+                    case 4:
+                        synchronized (mShareLock) {
                             if (mShareQueue.size() < MAX_VALUE) {
-                                mShareQueue.put(message);
+                                mShareQueue.offer(message);
                             }
-                            break;
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+                        }
+                        break;
                 }
             }
-        }).start();
+        });
+        message.start();
     }
 
     private MessageBean.User getUser() {
@@ -173,19 +180,12 @@ public class MainActivity extends AppCompatActivity {
 
     /**
      * 初始化存储数据结构
-     * 对于进入房间点赞分享等操作大量数据时，大量创建Node对象并插入和删除，并且虽然可能会存在有并发操作但是因为只存在一次取操作所以阻塞时间很短。
-     * 所以可以直接使用数组队列，而不必考虑锁分离，故综合来讲选择ArrayBlockingQueue。
-     *
-     * 送礼物的话数据量没有那么庞大（数据量庞大会造成系统不断GC，影响性能），但是每条都需要去读取回调UI，所以耗时长.
-     * 同时在此期间可能会有写入的并发操作，故使用带有锁分离的LinkedBlockingQueue降低锁的粒度,
-     * 从而不需要去锁住整个队列来提高性能，以确保高并发时减少阻塞，同时虽付出一些空间成本但数据量不是特别大仍是最优。
      */
     private void initStructure() {
-        mRoomQueue = new ArrayBlockingQueue<>(MAX_VALUE);//设置为6个是如果当前已经存在三个消息对象在排队，因为只最多展示三个，故之后的消息舍弃掉且不再进入队列。
-        mLikeQueue = new ArrayBlockingQueue<>(MAX_VALUE);
-        mShareQueue = new ArrayBlockingQueue<>(MAX_VALUE);
-
-        mGiftQueue = new LinkedBlockingQueue<>();
+        mRoomQueue = new ConcurrentLinkedQueue<>();
+        mLikeQueue = new ConcurrentLinkedQueue<>();
+        mShareQueue = new ConcurrentLinkedQueue<>();
+        mGiftQueue = new ConcurrentLinkedQueue<>();
     }
 
     /**
@@ -217,15 +217,15 @@ public class MainActivity extends AppCompatActivity {
         mAnimatorList = new LruCache<>(MAX_LRUCACHE);
         mAnimatorSet = new AnimatorSet();
         //按次序播放动画
-        mAnimatorSet.playSequentially(createAnimation("TranslationX",COME_TIME,mScreenWidth, tv_toast.getX()),
-                                      createAnimation("alpha", SHOW_TIME, 1.0f, 1.0f),
-                                      createAnimation("TranslationX", OUT_TIME, -mScreenWidth));
+        mAnimatorSet.playSequentially(createAnimation("TranslationX", COME_TIME, mScreenWidth, tv_toast.getX()),
+                createAnimation("alpha", SHOW_TIME, 1.0f, 1.0f),
+                createAnimation("TranslationX", OUT_TIME, -mScreenWidth));
         mAnimatorSet.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
                 mPlayIndex += 1;
-                changeTvToShow(mAnimatorList.get(mPlayIndex));
+                changeTvToShow(tv_toast,mAnimatorList.get(mPlayIndex));
             }
 
             @Override
@@ -246,7 +246,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 创建动画
      */
-    public ObjectAnimator createAnimation(String propertyName,long time,float... values) {
+    public ObjectAnimator createAnimation(String propertyName, long time, float... values) {
         return ObjectAnimator.ofFloat(tv_toast, propertyName, values).setDuration(time);
     }
 
@@ -279,7 +279,7 @@ public class MainActivity extends AppCompatActivity {
      *
      * @param animatorBean
      */
-    private void changeTvToShow(AnimatorBean animatorBean) {
+    private void changeTvToShow(TextView tv,AnimatorBean animatorBean) {
         if (animatorBean == null) {
             return;
         }
@@ -287,39 +287,20 @@ public class MainActivity extends AppCompatActivity {
         if (animatorBean.isShowBg()) {
             int level = animatorBean.getUserLevel();
             if (level == 1) {
-                setToastBg(R.drawable.level_badge_1);
+                ChangeUI.setToastBg(tv,R.drawable.level_badge_1,getApplicationContext());
             } else if (level >= 2 && level <= 15) {
-                setToastBg(R.drawable.level_badge_2);
+                ChangeUI.setToastBg(tv,R.drawable.level_badge_2,getApplicationContext());
             } else if (level >= 16 && level <= 25) {
-                setToastBg(R.drawable.level_badge_16);
+                ChangeUI.setToastBg(tv,R.drawable.level_badge_16,getApplicationContext());
             } else if (level >= 26 && level <= 40) {
-                setToastBg(R.drawable.level_badge_26);
+                ChangeUI.setToastBg(tv,R.drawable.level_badge_26,getApplicationContext());
             } else if (level >= 41) {
-                setToastBg(R.drawable.level_badge_41);
+                ChangeUI.setToastBg(tv,R.drawable.level_badge_41,getApplicationContext());
             }
         } else {
-            changeTvToNormal();
+            ChangeUI.changeTvToNormal(tv,getApplicationContext());
         }
-        tv_toast.setText(animatorBean.getMessage());
-    }
-
-    /**
-     * 动态设置动画背景
-     */
-    public void setToastBg(int res) {
-        tv_toast.setPadding(DensityUtil.dip2px(getApplicationContext(), 35), DensityUtil.dip2px(getApplicationContext(), 10)
-                , DensityUtil.dip2px(getApplicationContext(), 10), DensityUtil.dip2px(getApplicationContext(), 10));
-        tv_toast.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.colorTextNormal));
-        tv_toast.setBackground(ContextCompat.getDrawable(MainActivity.this, res));
-    }
-
-    /**
-     * 多人同时播出动画的设置
-     */
-    private void changeTvToNormal() {
-        tv_toast.setPadding(0, 0, 0, 0);
-        tv_toast.setBackgroundColor(ContextCompat.getColor(MainActivity.this, R.color.colorTextNormal));
-        tv_toast.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.colorTextBg));
+        tv.setText(animatorBean.getMessage());
     }
 
     /**
@@ -329,28 +310,37 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void run() {
             super.run();
-            while (true) {
+            //判断Activity是否已经被销毁
+            while (!isStopLooper) {
                 synchronized (mLooperThread) {
                     try {
-                        if (mRoomQueue.size() != 0) {
-                            sendMessageToHandler(getTypeStr(mRoomQueue));//处理进入房间
-                            mLooperThread.wait();
+                        if (!mRoomQueue.isEmpty()) {
+                            synchronized (mRoomLock) {
+                                sendMessageToHandler(getTypeStr(mRoomQueue));//处理进入房间
+                                mLooperThread.wait();
+                            }
                         }
-                        if (mLikeQueue.size() != 0) {
-                            sendMessageToHandler(getTypeStr(mLikeQueue));//处理点赞
-                            mLooperThread.wait();
+                        if (!mLikeQueue.isEmpty()) {
+                            synchronized (mLikeLock) {
+                                sendMessageToHandler(getTypeStr(mLikeQueue));//处理点赞
+                                mLooperThread.wait();
+                            }
                         }
                         //处理送礼物,只取截止到获取礼物池中的数量时的队列长度
-                        int giftNumber = mGiftQueue.size();
-                        if (giftNumber != 0) {
-                            for (int i = 0; i < giftNumber; i++) {
+                        synchronized (mGiftLock) {
+                            while (true) {
+                                if (mGiftQueue.isEmpty()) {
+                                    break;
+                                }
                                 sendMessageToHandler(getTypeStr(mGiftQueue));
                             }
                         }
 
-                        if (mShareQueue.size() != 0) {
-                            sendMessageToHandler(getTypeStr(mShareQueue));//处理分享
-                            mLooperThread.wait();
+                        if (!mShareQueue.isEmpty()) {
+                            synchronized (mShareLock) {
+                                sendMessageToHandler(getTypeStr(mShareQueue));//处理分享
+                                mLooperThread.wait();
+                            }
                         }
                     } catch (InterruptedException e) {
                         e.printStackTrace();
@@ -372,7 +362,7 @@ public class MainActivity extends AppCompatActivity {
     /**
      * 获取到对应类型的文案输出
      */
-    public AnimatorBean getTypeStr(BlockingQueue<MessageBean> queue) {
+    public AnimatorBean getTypeStr(ConcurrentLinkedQueue<MessageBean> queue) {
         if (mMessage == null) {
             mMessage = new StringBuffer();
         }
@@ -383,7 +373,7 @@ public class MainActivity extends AppCompatActivity {
         //单人进入房间时记录级别
         int userLevel = 1;
 
-        if (queue instanceof ArrayBlockingQueue) {
+        if (queue != mGiftQueue) {
             //以此时开始取的数据个数为size,在此期间加入队列的数据不计入其中
             int reallySize = queue.size();
             int size = reallySize > SHOW_NUMBER ? SHOW_NUMBER : reallySize;
@@ -429,9 +419,7 @@ public class MainActivity extends AppCompatActivity {
             }
             if (reallySize > SHOW_NUMBER) {
                 //此时应该清除掉剩下的数据（在刚刚取操作的时候新添入的数据不可被移除）
-                for (int i = 0; i < reallySize - SHOW_NUMBER; i++) {
-                    queue.poll();
-                }
+                queue.clear();
             }
         } else {
             //送礼部分
@@ -452,6 +440,7 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
         //移除所有消息释放资源
         mMessage = null;
+        isStopLooper = true;//释放消息轮询线程资源
         mHandler.removeCallbacksAndMessages(null);
     }
 }
