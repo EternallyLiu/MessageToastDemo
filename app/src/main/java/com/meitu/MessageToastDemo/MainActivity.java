@@ -135,17 +135,12 @@ public class MainActivity extends AppCompatActivity {
                 switch (message.getOpType()) {
                     case 1:
                         synchronized (mRoomLock) {
-                            //因为使用了无界的非阻塞队列，所以需要判断下内部存储的数据量大小
-                            if (mRoomQueue.size() < MAX_VALUE) {
-                                mRoomQueue.offer(message);
-                            }
+                            mRoomQueue.offer(message);
                         }
                         break;
                     case 2:
                         synchronized (mLikeLock) {
-                            if (mLikeQueue.size() < MAX_VALUE) {
-                                mLikeQueue.offer(message);
-                            }
+                            mLikeQueue.offer(message);
                         }
                         break;
                     case 3:
@@ -156,9 +151,7 @@ public class MainActivity extends AppCompatActivity {
                         break;
                     case 4:
                         synchronized (mShareLock) {
-                            if (mShareQueue.size() < MAX_VALUE) {
-                                mShareQueue.offer(message);
-                            }
+                            mShareQueue.offer(message);
                         }
                         break;
                 }
