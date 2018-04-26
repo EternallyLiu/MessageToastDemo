@@ -314,6 +314,7 @@ public class MainActivity extends AppCompatActivity {
             while (!isStopLooper) {
                 synchronized (mLooperThread) {
                     try {
+                        //官网推荐使用isEmpty替换size方法，size方法需要遍历整个链表
                         if (!mRoomQueue.isEmpty()) {
                             synchronized (mRoomLock) {
                                 sendMessageToHandler(getTypeStr(mRoomQueue));//处理进入房间
@@ -380,6 +381,9 @@ public class MainActivity extends AppCompatActivity {
             //非送礼部分
             for (int i = 0; i < size; i++) {
                 mBean = queue.poll();
+                if (mBean == null) {
+                    return null;
+                }
                 if (size == 1) {
                     userLevel = mBean.getUser().getLevel();
                 }
@@ -424,6 +428,9 @@ public class MainActivity extends AppCompatActivity {
         } else {
             //送礼部分
             mBean = queue.poll();
+            if (mBean == null) {
+                return null;
+            }
             index += 1;
             userLevel = mBean.getUser().getLevel();
             mMessage.append(mBean.getUser().getName()).append(getResources().getString(R.string.gift)).append(mBean.getGift().getName());
