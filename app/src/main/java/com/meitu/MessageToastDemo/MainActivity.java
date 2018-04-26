@@ -355,9 +355,11 @@ public class MainActivity extends AppCompatActivity {
      * 发送消息至Handler消息队列
      */
     private void sendMessageToHandler(AnimatorBean obj) {
-        Message toastMessage = Message.obtain();
-        toastMessage.obj = obj;
-        mHandler.sendMessage(toastMessage);
+        if (obj != null) {
+            Message toastMessage = Message.obtain();
+            toastMessage.obj = obj;
+            mHandler.sendMessage(toastMessage);
+        }
     }
 
     /**
