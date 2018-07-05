@@ -17,7 +17,7 @@ public class ChangeUI {
         tv.setPadding(DensityUtil.dip2px(context, 35), DensityUtil.dip2px(context, 10)
                 , DensityUtil.dip2px(context, 10), DensityUtil.dip2px(context, 10));
         tv.setTextColor(ContextCompat.getColor(context, R.color.colorTextNormal));
-        System.out.println("one");
+        System.out.println("");
         tv.setBackground(ContextCompat.getDrawable(context, res));
     }
 
