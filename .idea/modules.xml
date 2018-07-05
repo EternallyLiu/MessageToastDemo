@@ -2,8 +2,10 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/MessageToastDemo.iml" filepath="$PROJECT_DIR$/MessageToastDemo.iml" />
+      <module fileurl="file://D:\MyProject\SourceTreeDemo\MessageToastDemo.iml" filepath="D:\MyProject\SourceTreeDemo\MessageToastDemo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/SourceTreeDemo.iml" filepath="$PROJECT_DIR$/SourceTreeDemo.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://D:\MyProject\SourceTreeDemo\app\app.iml" filepath="D:\MyProject\SourceTreeDemo\app\app.iml" />
     </modules>
   </component>
 </project>
